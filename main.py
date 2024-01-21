@@ -56,4 +56,4 @@ async def main():
 
 
 asyncio.run(main())
-bot.run("ODE2NzAwMDk5OTIwMzk2MzQ4.GkVwZD.L59Ch1AyYe1dITdgCyIx3t9WZlu6C4ryL46l00")
+bot.run("TOKEN")
