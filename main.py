@@ -20,6 +20,7 @@ async def load_cogs():
 @bot.event
 async def on_ready():
     print(f"Bot is ready! {bot.user.name}")
+    bot.loop.create_task(bot.change_presence(activity=discord.Game(name="c!commands")))
 
 @bot.command()
 async def commands(ctx):
@@ -56,4 +57,4 @@ async def main():
 
 
 asyncio.run(main())
-bot.run("TOKEN")
+bot.run(os.getenv("TOKEN"))

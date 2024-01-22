@@ -38,7 +38,7 @@ class TTS(commands.Cog):
         '''
         Join voice channel
         '''
-
+        
         guild_id = ctx.guild.id
         if guild_id not in self.server_data:
             self.server_data[guild_id] = {
@@ -47,20 +47,26 @@ class TTS(commands.Cog):
                 "default_lang": "vi",
                 "message_queue": []
             }
-        await ctx.send(
-            "Dùng lệnh `!fb [phản hồi]` để gửi phản hồi lại cho Nem nha.")
-        if self.server_data[guild_id]["voice_client"]:
-            await self.server_data[guild_id]["voice_client"].disconnect()
+        
+        
+        if ctx.author.voice and ctx.author.voice.channel:
+            if self.server_data[guild_id]["voice_client"]:
+                await self.server_data[guild_id]["voice_client"].disconnect()
 
-        channel = ctx.author.voice.channel
-        self.server_data[guild_id]["voice_client"] = await channel.connect()
-
+            channel = ctx.author.voice.channel
+            self.server_data[guild_id]["voice_client"] = await channel.connect()
+            await ctx.send("Dùng lệnh `!fb [phản hồi]` để gửi phản hồi lại cho Nem nha.")
+        else:
+            await ctx.send("Ủa vào room voice chưa zị.")
+            return
+    
         self.voice = self.server_data[guild_id]["voice_client"]
         tts = gtts.gTTS(self.get_message(),
                         lang=self.server_data[guild_id]["default_lang"])
         tts.save(f"tts_{guild_id}.mp3")
         self.voice.play(
             discord.FFmpegPCMAudio(f"tts_{guild_id}.mp3", executable="ffmpeg"))
+        
 
     @commands.command()
     async def llist(self, ctx):
@@ -158,6 +164,7 @@ class TTS(commands.Cog):
         if self.server_data[guild_id]["is_bot_in_use"]:
             ctx.send("Đợi em nói xong đã rồi thử lại nha.")
             return
+        
         self.server_data[guild_id]["is_bot_in_use"] = True
         self.voice.play(
             discord.FFmpegPCMAudio("sound/outro.mp3", executable="ffmpeg"))
@@ -191,6 +198,22 @@ class TTS(commands.Cog):
     async def on_ready(self):
         print(f"Cog '{self.__class__.__name__}' is ready!")
 
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        # Check if the bot is in a voice channel on the same server
+        guild_id = member.guild.id
+        if guild_id in self.server_data and self.server_data[guild_id]["voice_client"]:
+            # Check if all members are disconnected
+            all_members_disconnected = all(m.bot or m.voice is None for m in member.guild.members)
+
+            if all_members_disconnected:
+                # Schedule disconnection after 10 seconds
+                await asyncio.sleep(10)
+                # Check again to ensure no one has joined during the delay
+                if all(m.bot or m.voice is None for m in member.guild.members):
+                    await self.server_data[guild_id]["voice_client"].disconnect()
+                    self.server_data.pop(guild_id)
+
     def get_message(self):
         '''
         Plays message when joins voice channel
@@ -205,11 +228,19 @@ class TTS(commands.Cog):
             "Wow, ngày nghỉ đầu tiên rồi.",
             "Chưa gì đã hết một ngày, còn mỗi hôm nay để xoã thôi."
         ]
+        return message[day] if 0 <= day <= 6 else ""
 
-        news = "Em mới được update thêm hàng chờ với thông báo người viết tin nhắn nên là bây giờ mọi người cứ spam thoải mái, không cần lo nha"
-        #return message[day] if 0 <= day <= 6 else ""
-        return ""
+    async def check_disconnect(self, guild_id):
+        # Check if there are no users in the voice channel
+        voice_channel = self.server_data[guild_id]["voice_client"].channel
+        members_in_channel = voice_channel.members
 
+        if len(members_in_channel) == 0:
+            # Schedule disconnection after 30 seconds
+            await asyncio.sleep(5)
+            await self.server_data[guild_id]["voice_client"].disconnect()
+            self.server_data.pop(guild_id)
+            print(f"Bot disconnected from {voice_channel.name}")
 
 async def setup(bot):
     await bot.add_cog(TTS(bot))
