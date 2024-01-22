@@ -1,5 +1,4 @@
-from sys import executable
-from discord import voice_client
+
 from discord.ext import commands
 import discord
 import gtts
