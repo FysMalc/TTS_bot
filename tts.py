@@ -46,7 +46,6 @@ class TTS(commands.Cog):
                 "is_bot_in_use": None,
                 "default_lang": "vi",
                 "message_queue": [],
-                "server_name": ctx.guild.name
             }
         
         
@@ -131,9 +130,8 @@ class TTS(commands.Cog):
             while self.voice.is_playing():
                 await asyncio.sleep(1)
         except Exception as e:
-            server_name = self.server_data[guild_id]["server_name"]
             with open("error.txt", "a") as f:
-                f.write(f"{server_name} {time} {text}: lỗi {e}\n")
+                f.write(f"[{time}] {ctx.author.name} {text}: lỗi {e}\n")
 
         self.server_data[guild_id]["is_bot_in_use"] = False
         if self.server_data[guild_id]["message_queue"]:
