@@ -45,7 +45,8 @@ class TTS(commands.Cog):
                 "voice_client": None,
                 "is_bot_in_use": None,
                 "default_lang": "vi",
-                "message_queue": []
+                "message_queue": [],
+                "server_name": ctx.guild.name
             }
         
         
@@ -63,9 +64,9 @@ class TTS(commands.Cog):
         self.voice = self.server_data[guild_id]["voice_client"]
         tts = gtts.gTTS(self.get_message(),
                         lang=self.server_data[guild_id]["default_lang"])
-        tts.save(f"tts_{guild_id}.mp3")
+        tts.save(f"tts/tts_{guild_id}.mp3")
         self.voice.play(
-            discord.FFmpegPCMAudio(f"tts_{guild_id}.mp3", executable="ffmpeg"))
+            discord.FFmpegPCMAudio(f"tts/tts_{guild_id}.mp3", executable="ffmpeg"))
         
 
     @commands.command()
@@ -120,18 +121,19 @@ class TTS(commands.Cog):
             tts = gtts.gTTS(text=text, lang=lang, slow=False)
 
             # Save the TTS to a file
-            tts.save(f'tts_{guild_id}.mp3')
+            tts.save(f'tts/tts_{guild_id}.mp3')
 
             self.voice.play(
-                discord.FFmpegPCMAudio(f'tts_{guild_id}.mp3',
+                discord.FFmpegPCMAudio(f'tts/tts_{guild_id}.mp3',
                                        executable="ffmpeg"))
 
             # Wait for the TTS to finish playing
             while self.voice.is_playing():
                 await asyncio.sleep(1)
         except Exception as e:
+            server_name = self.server_data[guild_id]["server_name"]
             with open("error.txt", "a") as f:
-                f.write(f"{time} {text}: lỗi {e}\n")
+                f.write(f"{server_name} {time} {text}: lỗi {e}\n")
 
         self.server_data[guild_id]["is_bot_in_use"] = False
         if self.server_data[guild_id]["message_queue"]:
@@ -191,7 +193,7 @@ class TTS(commands.Cog):
         time = datetime.now(self.timezone).strftime('%Y-%m-%d %H:%M:%S')
 
         with open("feedback.txt", "a") as f:
-            f.write(f"[{time}] {ctx.author.name}: {text}\n")
+            f.write(f"[{time}] {ctx.guild.name} {ctx.author.name}: {text}\n")
         await ctx.send("Nem sẽ xem feedback khi Nem dệy nha :3")
 
     @commands.Cog.listener()
